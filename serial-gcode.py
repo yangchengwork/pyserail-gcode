@@ -10,13 +10,14 @@ import serial
 import argparse
 
 #是否使用syncio方式
-asyncio_flag = False
+asyncio_flag = False # True #
 
-async def read_func(gcode:str):
-    reader, writer = await serial_asyncio.open_serial_connection(url='/dev/ttyUSB0', baudrate=115200)
-    writer.write(gcode.encode())
-    data = await reader.read(100)
-    print(f'Received: {data.decode()}')
+async def read_func(lines, port, baudrate):
+    reader, writer = await serial_asyncio.open_serial_connection(url=port, baudrate=baudrate)
+    for line in lines:
+        writer.write(line.encode())
+        data = await reader.read(100)
+        print(f'Received: {data.decode()}')
     writer.close()
     await writer.wait_closed()
 
@@ -41,8 +42,7 @@ def main_func():
         file_buf = f.readlines()
 
     if asyncio_flag:
-        for line in file_buf:
-            asyncio.run(read_func(line))
+         asyncio.run(read_func(file_buf, args.port, args.baudrate))
     else:
         ser = serial.Serial(args.port, args.baudrate, timeout=10)
         for line in file_buf:
