@@ -11,6 +11,8 @@ import argparse
 
 #是否使用syncio方式
 asyncio_flag = False # True #
+#是否上电复位
+poweron_reset = True
 
 async def read_func(lines, port, baudrate):
     reader, writer = await serial_asyncio.open_serial_connection(url=port, baudrate=baudrate)
@@ -35,6 +37,21 @@ def cmd_line():
     args.add_argument('-f', '--file', type=str, required=True, help='G代码文件名')
     return args.parse_args()
 
+def serial_reset(ser:serial.Serial):
+    ser.setDTR(True)
+    ser.setDTR(False)
+    ser.setDTR(True)
+
+    before_len = 0
+    while True:
+        read = ser.readline()
+        if len(read) == 0:
+            if before_len == 0:
+                break
+        before_len = len(read)
+        print(f'reset: {read.decode()}')
+
+
 def main_func():
     args = cmd_line()
     # 按行读取
@@ -44,7 +61,9 @@ def main_func():
     if asyncio_flag:
          asyncio.run(read_func(file_buf, args.port, args.baudrate))
     else:
-        ser = serial.Serial(args.port, args.baudrate, timeout=10)
+        ser = serial.Serial(args.port, args.baudrate, timeout=5)
+        if poweron_reset:
+            serial_reset(ser)
         for line in file_buf:
             serial_func(line, ser)
         ser.close()
