@@ -12,21 +12,21 @@ import argparse
 #是否使用syncio方式
 asyncio_flag = False # True #
 #是否上电复位
-poweron_reset = True
+poweron_reset = False # True #
 
 async def read_func(lines, port, baudrate):
     reader, writer = await serial_asyncio.open_serial_connection(url=port, baudrate=baudrate)
     for line in lines:
         writer.write(line.encode())
         data = await reader.read(100)
-        print(f'Received: {data.decode()}')
+        print(f'send: {line} Received: {data.decode()}')
     writer.close()
     await writer.wait_closed()
 
 def serial_func(gcode:str, ser:serial.Serial):
     ser.write(gcode.encode())
     read = ser.readline()
-    print(f'Received: {read.decode()}')
+    print(f'send: {gcode} Received: {read.decode()}')
 
 # 读取命令行参数来确认串口名
 def cmd_line():
@@ -61,7 +61,7 @@ def main_func():
     if asyncio_flag:
          asyncio.run(read_func(file_buf, args.port, args.baudrate))
     else:
-        ser = serial.Serial(args.port, args.baudrate, timeout=5)
+        ser = serial.Serial(args.port, args.baudrate, timeout=1)
         if poweron_reset:
             serial_reset(ser)
         for line in file_buf:
