@@ -51,6 +51,21 @@ def serial_reset(ser:serial.Serial):
         before_len = len(read)
         print(f'reset: {read.decode()}')
 
+# 读取gcode G1的数据并减少XY小数点后的位数
+def change_gcode_G1(line:str):
+    x = float(line.split('X')[1].split('Y')[0])
+    y = float(line.split('Y')[1].split(' ')[0])
+    # x y都只保留小数点后三位，输出成str
+    out_len = f'G1 X{x:.3f} Y{y:.3f}'
+    return out_len
+
+def read_gcode(file:str):
+    with open(file, 'r') as f:
+        file_buf = f.readlines()
+    for line in file_buf:
+        if line.startswith('G1 X') and ' Y' in line:
+            line = change_gcode_G1(line)
+            print(line)
 
 def main_func():
     args = cmd_line()
@@ -64,9 +79,12 @@ def main_func():
         ser = serial.Serial(args.port, args.baudrate, timeout=1)
         if poweron_reset:
             serial_reset(ser)
+        if line.startswith('G1 X') and ' Y' in line:
+            line = change_gcode_G1(line)
         for line in file_buf:
             serial_func(line, ser)
         ser.close()
 
 if __name__ == '__main__':
     main_func()
+    # read_gcode('out.gcode')
